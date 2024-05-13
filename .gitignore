@@ -8,6 +8,8 @@ layermodel
 output
 input
 
+test.py
+
 ./models/
 output.*.png
 diffuser-cache

@@ -1,6 +1,5 @@
 from cog import BasePredictor, Input, Path # type: ignore
 from typing import List
-import os
 import random
 from typing import Sequence, Mapping, Any, Union
 import torch
@@ -14,50 +13,6 @@ def get_value_at_index(obj: Union[Sequence, Mapping], index: int) -> Any:
         return obj[index]
     except KeyError:
         return obj["result"][index]
-
-
-def find_path(name: str, path: str = None) -> str:
-    if path is None:
-        path = os.getcwd()
-
-    if name in os.listdir(path):
-        path_name = os.path.join(path, name)
-        print(f"{name} found: {path_name}")
-        return path_name
-
-    parent_directory = os.path.dirname(path)
-
-    if parent_directory == path:
-        return None
-
-    return find_path(name, parent_directory)
-
-'''
-def add_comfyui_directory_to_sys_path() -> None:
-    comfyui_path = find_path("ComfyUI")
-    if comfyui_path is not None and os.path.isdir(comfyui_path):
-        sys.path.append(comfyui_path)
-        print(f"'{comfyui_path}' added to sys.path")
-
-
-add_comfyui_directory_to_sys_path()
-
-
-def import_custom_nodes() -> None:
-    import asyncio
-    import execution
-    from nodes import init_custom_nodes
-    import server
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    server_instance = server.PromptServer(loop)
-    execution.PromptQueue(server_instance)
-
-    init_custom_nodes()
-'''
-
 
 from utils.nodes import (
     KSampler,
@@ -76,6 +31,12 @@ with torch.inference_mode():
         ckpt_name="./models/model.safetensors"
     )
 
+    layereddiffusionapply = NODE_CLASS_MAPPINGS["LayeredDiffusionApply"]().apply_layered_diffusion(
+        config="SDXL, Attention Injection",
+        weight=1,
+        model=get_value_at_index(checkpointloadersimple, 0),
+    )
+
     def pipe(prompt, negative_prompt, num_outputs, height, width, steps, cfg, sampler_name, scheduler):
         emptylatentimage = EmptyLatentImage().generate(
             width=width, height=height, batch_size=num_outputs
@@ -90,20 +51,6 @@ with torch.inference_mode():
 
         cliptextencode_negative = cliptextencode.encode(
             text=negative_prompt, clip=get_value_at_index(checkpointloadersimple, 1)
-        )
-
-        """
-        layereddiffusionapply = NODE_CLASS_MAPPINGS["LayeredDiffusionApply"]().apply_layered_diffusion(
-            config="SDXL, Conv Injection",
-            weight=1,
-            model=get_value_at_index(checkpointloadersimple, 0),
-        )
-        """
-        
-        layereddiffusionapply = NODE_CLASS_MAPPINGS["LayeredDiffusionApply"]().apply_layered_diffusion(
-            config="SDXL, Attention Injection",
-            weight=1,
-            model=get_value_at_index(checkpointloadersimple, 0),
         )
 
         ksampler = KSampler().sample(
@@ -196,7 +143,7 @@ class Predictor(BasePredictor):
 
         output_paths = []
 
-        for i, image in enumerate(images):
+        for _, image in enumerate(images):
             output_paths.append(Path(f"./utils/output/{image['filename']}"))
 
         print(output_paths)
