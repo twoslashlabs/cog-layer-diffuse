@@ -1,0 +1,37 @@
+name: Push to Replicate
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_name:
+        required: true
+      registry:
+        required: true
+      model_url:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Free disk pace
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          docker-images: false
+
+      - name: Setup Cog
+        uses: aicapcut/setup-cog@v0.9.8
+        with:
+          token: ${{ secrets.REPLICATE_API_TOKEN }}
+
+      - name: Download Model
+        run: |
+          mkdir models
+          wget ${{ inputs.model_url }} -O ./models/model.safetensors
+      
+      - name: Push to Replicate
+        run: cog push r8.im/${{ inputs.registry }}/${{ inputs.model_name }}
