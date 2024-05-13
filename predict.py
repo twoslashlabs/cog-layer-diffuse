@@ -184,6 +184,14 @@ class Predictor(BasePredictor):
             description="Number of denoising steps", ge=1, le=500, default=25
         ),
     ) -> List[Path]:
+        if height % 64:
+            height = (height // 64 + 1) * 64
+            print(f"[Info] Output height has been resized to {height}")
+
+        if width % 64:
+            width = (width // 64 + 1) * 64
+            print(f"[Info] Output witdh has been resized to {width}")
+
         images = pipe(prompt, negative_prompt, num_outputs, height, width, num_inference_steps, cfg, sampler_name, scheduler)['ui']['images']
 
         output_paths = []
