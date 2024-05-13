@@ -1,1 +1,1 @@
-comming soon
+Layer diffuse with cog
